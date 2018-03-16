@@ -1,0 +1,18 @@
+{
+
+  "services": {
+    "REGISTRY": {
+      "PORT": 3000,
+      "NAME": "registry-service",
+      "TYPE": "REGISTRY",
+      "HEALTHCHECK_INTERVAL" : 5000
+    },
+    "AUTH": {
+      "PORT": 4000,
+      "NAME": "auth-service",
+      "TYPE": "AUTH"      
+    }
+  },
+
+  "REGISTRY_URI": "http://registry-service:3000"
+}
