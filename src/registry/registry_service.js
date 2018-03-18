@@ -5,6 +5,8 @@ const BaseServiceClient = require('../base').Client;
 const Storage           = require('./storage');
 const config            = require('../../config.json').services.REGISTRY;
 
+const socketio = require('socket.io');
+
 
 class RegistryService extends BaseService {
 
@@ -44,6 +46,15 @@ class RegistryService extends BaseService {
 
         this.storage = new Storage();
         this.addRoutes(routes);
+        this.addMiddleWares([
+            async (ctx, next) => {
+                ctx.set('Access-Control-Allow-Origin', 'localhost');
+                ctx.set('Access-Control-Allow-Credentials', false);
+                ctx.set('Access-Control-Allow-Headera', 'Origin, Accept, Content-Type');
+                next();
+            }
+        ])
+
     }   
     
     async registerService(ctx) {
@@ -51,7 +62,7 @@ class RegistryService extends BaseService {
         const newService = this.createServiceClient(type, host);
         
         this.storage.save(newService);
-
+        this.notifyClients();
         ctx.stasus = 200;
         ctx.body = 'OK';
     }
@@ -95,6 +106,7 @@ class RegistryService extends BaseService {
             } catch(err) {
                 console.log(err);
                 this.storage.delete(service);
+                this.notifyClients();
             }
 
         });
@@ -106,7 +118,20 @@ class RegistryService extends BaseService {
 
     listen(...args) {
         super.listen(...args);
+        this.io = socketio(this.httpServer);
+        this.addSocketSupport()
         this.runHealthChecks();
+    }
+
+    notifyClients() {
+        this.io.local.emit('servers',this.storage.all().map((s) => s.toJSON()));
+    }
+
+    addSocketSupport() {
+        this.io.on('connection', (socket) => {
+            console.log('SOCKET Connection');
+            socket.emit('servers', this.storage.all().map((s) => s.toJSON()));
+        });
     }
 }
 

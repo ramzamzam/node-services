@@ -1,12 +1,14 @@
 const BaseService = require('../base/base_service');
 
+const config = require('../../config.json').services.AUTH;
+
 class AuthService extends BaseService {
 
   constructor(PORT) {
     super({
       PORT: PORT,
-      type: 'AUTH',
-      serviceName: 'auth-service'
+      type: config.TYPE,
+      serviceName: config.NAME
     });
     const routes = [
       {

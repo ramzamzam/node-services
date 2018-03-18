@@ -1,3 +1,5 @@
+const http = require('http');
+
 const KoaRouter = require('koa-router');
 const Koa       = require('koa');
 const request   = require('request-promise');
@@ -67,7 +69,9 @@ class BaseService {
     }
 
     listen() {
-        this.app.listen(this.PORT, () => {
+        this.httpServer = http.createServer(this.app.callback());
+
+        this.httpServer.listen(this.PORT, () => {
             console.log(`${this.serviceName} listening on port ${this.PORT}`);
             this.registerSelf();
         });
