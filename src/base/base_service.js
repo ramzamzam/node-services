@@ -44,6 +44,7 @@ class BaseService {
         this.type = options.type || 'BASE';
         this.serviceName = options.serviceName || 'base-service'
         this.PORT = options.PORT || 3001;
+        this.HOSTNAME = options.HOSTNAME || this.serviceName;
         this.shouldNotRegisterSelf = options.shouldNotRegisterSelf || false;
 
         this.app = new Koa();
@@ -85,7 +86,7 @@ class BaseService {
             uri: this.config.REGISTRY_URI + '/register',
             headers: {
                 type: this.type,
-                host: 'http://' + this.serviceName + ':' + this.PORT
+                host: 'http://' + this.HOSTNAME + ':' + this.PORT
             },
             json: true 
         };

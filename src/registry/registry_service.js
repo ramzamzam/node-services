@@ -10,11 +10,12 @@ const socketio = require('socket.io');
 
 class RegistryService extends BaseService {
 
-    constructor(PORT) {
+    constructor(PORT, HOSTNAME) {
 
         super({
             PORT: PORT || config.PORT,
             type: 'REGISTRY',
+            HOSTNAME: HOSTNAME,
             serviceName: config.NAME,
             shouldNotRegisterSelf: true
         });

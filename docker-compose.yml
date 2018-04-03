@@ -3,7 +3,7 @@ version: "3"
 services:
   registry-service:
     image: node-service
-    command: node index REGISTRY 3000
+    command: node index REGISTRY registry-service 3000
     build: ./
     environment:
       NODE_ENV: production
@@ -14,5 +14,11 @@ services:
     build: ./
     depends_on: 
       - registry-service
-    command: node index AUTH 3000
+    command: node index AUTH auth-service 3000
+  auth-service1:
+    image: node-service
+    build: ./
+    depends_on: 
+      - registry-service
+    command: node index AUTH auth-service1 3001
     

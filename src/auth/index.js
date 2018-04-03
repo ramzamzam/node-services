@@ -4,10 +4,11 @@ const config = require('../../config.json').services.AUTH;
 
 class AuthService extends BaseService {
 
-  constructor(PORT) {
+  constructor(PORT, HOSTNAME) {
     super({
       PORT: PORT,
       type: config.TYPE,
+      HOSTNAME: HOSTNAME,
       serviceName: config.NAME
     });
     const routes = [
