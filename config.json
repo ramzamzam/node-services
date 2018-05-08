@@ -1,14 +1,28 @@
 {
 
   "services": {
+
+    "BFFE": {
+      "PORT": 3000,
+      "NAME": "bffe-service",
+      "TYPE": "BFFE"
+    },
+
     "REGISTRY": {
       "PORT": 3000,
       "NAME": "registry-service",
       "TYPE": "REGISTRY",
       "HEALTHCHECK_INTERVAL" : 5000
     },
+
+    "COLLABORATION": {
+      "PORT": 3000,
+      "NAME": "collab-service",
+      "TYPE": "COLLABORATION"
+    },
+
     "AUTH": {
-      "PORT": 4000,
+      "PORT": 3000,
       "NAME": "auth-service",
       "TYPE": "AUTH"      
     }

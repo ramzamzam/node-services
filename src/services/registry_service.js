@@ -1,12 +1,45 @@
 const _ = require('lodash');
+const redis = require('redis');
 
-const BaseService       = require('../base').Service;
-const BaseServiceClient = require('../base').Client;
-const Storage           = require('./storage');
+const BaseService       = require('./base_service')
+const BaseServiceClient = require('../clients').BASE;
+
 const config            = require('../../config.json').services.REGISTRY;
+
+const _storage = require('../storage');
 
 const socketio = require('socket.io');
 
+class Storage {
+    constructor() {
+        this.data = [];
+    }
+
+    save(serviceClient) {
+        if(this.data.find(service => service.is(serviceClient))) return true; // return true if we already have this one
+        this.data.push(serviceClient);
+    }
+
+    get(type) {
+        return this.data.filter((e) => e.type === type).map(s => s.toJSON());
+    }
+
+
+    delete(service) {
+        this.data.splice(this.data.indexOf(service), 1);
+    }
+
+    all() {
+        return this.data;
+    }
+    
+    random(type) {
+        const all = this.get(type); 
+        if(!all.length) return;
+        return all[ _.random(all.length - 1) ];
+    }
+}
+  
 
 class RegistryService extends BaseService {
 
@@ -14,7 +47,7 @@ class RegistryService extends BaseService {
 
         super({
             PORT: PORT || config.PORT,
-            type: 'REGISTRY',
+            type: config.TYPE,
             HOSTNAME: HOSTNAME,
             serviceName: config.NAME,
             shouldNotRegisterSelf: true
@@ -23,7 +56,7 @@ class RegistryService extends BaseService {
         const self = this;
         const routes = [
             {
-                method: 'post',
+                method: 'post', 
                 path:   '/register',
                 handler : this.registerService.bind(self) // TODO: find out another way to do this
             },
@@ -54,15 +87,30 @@ class RegistryService extends BaseService {
                 ctx.set('Access-Control-Allow-Headera', 'Origin, Accept, Content-Type');
                 next();
             }
-        ])
+        ]);
 
-    }   
-    
-    async registerService(ctx) {
+        this.redisClient = redis.createClient(6379, 'redis');
+
+        this.redisClient.subscribe('new service');
+        this.redisClient.on('message', (channel, message) => {
+            
+            console.log( 'REDIS ::', {channel, message});
+            if (channel !== 'new service' ) return;
+            const serviceConfig = JSON.parse(message);
+            this.registerService(serviceConfig, true);
+        });
+        this.init();
+        
+    }
+
+    async registerService(ctx, fromNotification) {
         const { type, host } =  ctx.headers;
         const newService = this.createServiceClient(type, host);
         
-        this.storage.save(newService);
+        const alreadyHad = this.storage.save(newService); 
+        if (alreadyHad) return;
+
+        if (!fromNotification) this.redisClient.publish('new service', JSON.stringify({type, host}));
         this.notifyClients();
         ctx.stasus = 200;
         ctx.body = 'OK';
@@ -133,6 +181,14 @@ class RegistryService extends BaseService {
             console.log('SOCKET Connection');
             socket.emit('servers', this.storage.all().map((s) => s.toJSON()));
         });
+    }
+
+    async initialize() {
+        try {
+            this.db = await _storage.connect({sync: true})
+        } catch (err) {
+            console.log({err});
+        }
     }
 }
 

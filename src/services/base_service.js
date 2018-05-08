@@ -1,11 +1,15 @@
 const http = require('http');
+const _ = require('lodash');
 
 const KoaRouter = require('koa-router');
 const Koa       = require('koa');
+const bodyParser = require('koa-bodyparser');
+
+
 const request   = require('request-promise');
 
 const config    = require('../../config.json');
-
+const RegistryClient = require('../clients').REGISTRY;
 const baseRoutes = [
     { 
         method : 'get', 
@@ -17,9 +21,11 @@ const baseRoutes = [
 ];
 
 const baseMWares = [
-    (ctx, next) => {
+    bodyParser(),
+    async (ctx, next) => {
         console.log(ctx.req.url)
-        next();
+        console.log(ctx.request.body)
+        await next();
     },
 
     async (ctx, next) => {
@@ -31,6 +37,13 @@ const baseMWares = [
         }
     }
 ];
+
+
+const METHODS = {
+    'list'   : { method: 'get', append: '' },
+    'get'    : { method: 'get', append: '/:id' },
+    'create' : { method: 'post', append: '' }
+  }
 
 class BaseService {
     /**
@@ -46,19 +59,23 @@ class BaseService {
         this.PORT = options.PORT || 3001;
         this.HOSTNAME = options.HOSTNAME || this.serviceName;
         this.shouldNotRegisterSelf = options.shouldNotRegisterSelf || false;
+      
+        if (!this.initialize) this.initialize  = () => {};
 
         this.app = new Koa();
         this.router = new KoaRouter();
+        
         this.addMiddleWares(baseMWares);
         this.addRoutes(baseRoutes);
-        this.app
-            .use(this.router.routes())
-            .use(this.router.allowedMethods());
-
         this.config = config;
     }
 
-  
+    init() {
+        this.app
+        .use(this.router.routes())
+        .use(this.router.allowedMethods());
+    }
+
     addRoutes(routes) {
         routes.forEach((route) => {
             this.router[route.method](route.path, route.handler);
@@ -68,6 +85,24 @@ class BaseService {
     addMiddleWares(mws) {
         mws.forEach((mw) => this.app.use(mw));
     }
+
+    addRouteHandlers(baseRoute, handlers) {
+        const routes = _.map(handlers, (handler, kind) => {
+          const opts = METHODS[kind];
+          console.log ({
+            method  : opts.method,
+            path    : baseRoute + opts.append,
+            handler : handler.bind(this)
+          });
+
+          return {
+            method  : opts.method,
+            path    : baseRoute + opts.append,
+            handler : handler.bind(this)
+          }; 
+        });
+        this.addRoutes(routes);
+      }
 
     listen() {
         this.httpServer = http.createServer(this.app.callback());
@@ -81,24 +116,25 @@ class BaseService {
     async registerSelf() {
         if(this.shouldNotRegisterSelf) return;
 
-        const options = {
-            method: 'POST',
-            uri: this.config.REGISTRY_URI + '/register',
-            headers: {
-                type: this.type,
-                host: 'http://' + this.HOSTNAME + ':' + this.PORT
-            },
-            json: true 
-        };
+        this.registryClient = new RegistryClient(this.config.REGISTRY_URI);
         
         try {
-            const result = await request(options);
+            const result = await this.registryClient.register({
+                type: this.type,
+                host: 'http://' + this.HOSTNAME + ':' + this.PORT
+            });
             console.log('REGISTERED', result);
         } catch(err) {
             console.error(err);
             setTimeout(this.registerSelf.bind(this), 1000);
         }
     }
+
+    async getServiceClient(serviceConstructor) {
+        return await this.registryClient.getService(serviceConstructor);
+    }
+
+
 }
 
 module.exports = BaseService;

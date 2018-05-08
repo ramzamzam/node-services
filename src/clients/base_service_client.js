@@ -16,8 +16,8 @@ class BaseServiceClient {
       method: method,
       uri : this.host + '/' + path,
       headers : headers,
-      body: body,
-      json: (typeof body === 'object')
+      body: body || {},
+      json: true
     });
   }
   
@@ -26,6 +26,10 @@ class BaseServiceClient {
       type: this.type,
       host: this.host
     }
+  }
+
+  is(anotherService) {
+    return this.type === anotherService.type && this.host === anotherService.host;
   }
 }
 

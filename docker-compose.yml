@@ -1,24 +1,55 @@
 version: "3"
 
 services:
+  redis:
+    image: redis
+  
+  storage:
+    image: postgres:latest
+    ports:
+      - 5434:5432
+
   registry-service:
     image: node-service
     command: node index REGISTRY registry-service 3000
     build: ./
+    depends_on:
+      - redis
+      - storage
     environment:
       NODE_ENV: production
+
+
+  collab-service:
+    image: node-service
+    build: ./
+    depends_on:
+      - registry-service
+    command: node index COLLABORATION collab-service 3000
     ports: 
-      - 3010:3000
-  auth-service:
+      - 3001:3000
+      
+  bffe-service:
     image: node-service
     build: ./
-    depends_on: 
+    depends_on:
       - registry-service
-    command: node index AUTH auth-service 3000
-  auth-service1:
-    image: node-service
-    build: ./
-    depends_on: 
-      - registry-service
-    command: node index AUTH auth-service1 3001
-    
+      - collab-service
+    command: node index BFFE bffe-service 3000
+    ports: 
+      - 3000:3000
+  
+  # auth-service:
+  #   image: node-service
+  #   build: ./
+  #   depends_on: 
+  #     - registry-service
+  #   command: node index AUTH auth-service 3000
+
+  # auth-service1:
+  #   image: node-service
+  #   build: ./
+  #   depends_on: 
+  #     - registry-service
+  #   command: node index AUTH auth-service1 3001
+  
