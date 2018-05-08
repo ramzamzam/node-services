@@ -3,6 +3,7 @@ const config    = require('../../config.json');
 
 const clients = require('../clients');
 
+const cors = require('koa2-cors');
 
 const documentHandlers = {
 
@@ -35,6 +36,9 @@ class BFFEService extends BaseService {
       type: config.TYPE,
       HOSTNAME: HOSTNAME,
       serviceName: config.NAME,
+      middlewares: [
+        cors()
+      ]
     });
 
     this.addRouteHandlers('/docs', documentHandlers);

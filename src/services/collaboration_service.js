@@ -29,7 +29,7 @@ const documentHandlers = {
     const doc = await this.db.document.findById(id);
     ctx.body = doc;
   }
-
+  
 }
 
 class CollaborationService extends Service {

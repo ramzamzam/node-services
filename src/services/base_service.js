@@ -42,7 +42,8 @@ const baseMWares = [
 const METHODS = {
     'list'   : { method: 'get', append: '' },
     'get'    : { method: 'get', append: '/:id' },
-    'create' : { method: 'post', append: '' }
+    'create' : { method: 'post', append: '' },
+    // 'update' : { method: 'put', append:'/:id' }
   }
 
 class BaseService {
@@ -64,7 +65,7 @@ class BaseService {
 
         this.app = new Koa();
         this.router = new KoaRouter();
-        
+        if (options.middlewares) this.addMiddleWares(options.middlewares);
         this.addMiddleWares(baseMWares);
         this.addRoutes(baseRoutes);
         this.config = config;
