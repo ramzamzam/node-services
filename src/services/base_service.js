@@ -43,6 +43,7 @@ const METHODS = {
     'list'   : { method: 'get', append: '' },
     'get'    : { method: 'get', append: '/:id' },
     'create' : { method: 'post', append: '' },
+    'delete' : { method: 'delete', append: '/:id'}
     // 'update' : { method: 'put', append:'/:id' }
   }
 

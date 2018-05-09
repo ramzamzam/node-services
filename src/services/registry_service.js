@@ -89,28 +89,33 @@ class RegistryService extends BaseService {
             }
         ]);
 
-        this.redisClient = redis.createClient(6379, 'redis');
+        this.redisSubClient = redis.createClient(6379, 'redis');
 
-        this.redisClient.subscribe('new service');
-        this.redisClient.on('message', (channel, message) => {
+        this.redisSubClient.subscribe('new service');
+        this.redisSubClient.on('message', (channel, message) => {
             
             console.log( 'REDIS ::', {channel, message});
             if (channel !== 'new service' ) return;
-            const serviceConfig = JSON.parse(message);
+            const serviceConfig = {headers : JSON.parse(message), fromNotification: true};
             this.registerService(serviceConfig, true);
         });
+        this.redisPubClient = this.redisSubClient.duplicate();
         this.init();
         
     }
 
-    async registerService(ctx, fromNotification) {
+    async registerService(ctx) {
         const { type, host } =  ctx.headers;
+        const { fromNotification } = ctx;
         const newService = this.createServiceClient(type, host);
         
         const alreadyHad = this.storage.save(newService); 
         if (alreadyHad) return;
 
-        if (!fromNotification) this.redisClient.publish('new service', JSON.stringify({type, host}));
+        if (!fromNotification) {
+            console.log('PUBLISH TO REDIS')
+            this.redisPubClient.publish('new service', JSON.stringify({type, host}));
+        }
         this.notifyClients();
         ctx.stasus = 200;
         ctx.body = 'OK';
@@ -150,7 +155,7 @@ class RegistryService extends BaseService {
         services.forEach(async (service) => {
             
             try {
-                console.log('checking', service.toJSON())
+                // console.log('checking', service.toJSON())
                 const status = await service.healthCheck();
             } catch(err) {
                 console.log(err);

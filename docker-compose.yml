@@ -19,6 +19,16 @@ services:
     environment:
       NODE_ENV: production
 
+  
+  # registry-service1:
+  #   image: node-service
+  #   command: node index REGISTRY registry-service 3000
+  #   build: ./
+  #   depends_on:
+  #     - redis
+  #     - storage
+  #   environment:
+  #     NODE_ENV: production
 
   collab-service:
     image: node-service
